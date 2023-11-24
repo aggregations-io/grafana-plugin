@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "Aggregations.io",
+  "id": "aggregations-io-datasource",
+  "metrics": true,
+  "backend": true,
+  "alerting": true,
+  "executable": "gpx_aggregations-io",
+  "info": {
+    "description": "",
+    "author": {
+      "name": "Aggregations.io"
+    },
+    "keywords": ["datasource", "aggregations"],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [],
+    "screenshots": [
+      { "name": "charts", "path": "img/charts.png" },
+      { "name": "filter-setup", "path": "img/filter-setup.png" }
+    ],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "queryOptions": {
+    "minInterval": false,
+    "maxDataPoints": false
+  },
+  "dependencies": {
+    "grafanaDependency": ">=9.5.3",
+    "plugins": []
+  }
+}
