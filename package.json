@@ -1,6 +1,6 @@
 {
   "name": "aggregations-io",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
   "scripts": {
     "build": "webpack -c ./.config/webpack/webpack.config.ts --env production",
@@ -16,7 +16,7 @@
     "sign": "npx --yes @grafana/sign-plugin@latest"
   },
   "author": "Aggregations.io",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.21.4",
     "@grafana/e2e": "9.5.3",
@@ -64,6 +64,5 @@
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "tslib": "2.5.3"
-  },
-  "packageManager": "npm@9.8.0"
+  }
 }
