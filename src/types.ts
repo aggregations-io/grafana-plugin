@@ -89,6 +89,25 @@ export enum Calculation {
   Percentiles = 'PERCENTILES',
 }
 
+export function calculationPretty(value: Calculation ):string {
+   switch(value){
+    case Calculation.Count:
+      return 'Count';          
+      case Calculation.Sum:
+        return 'Sum';        
+      case Calculation.Approx_Count_Distinct:
+        return 'Approx. Count Distinct';
+      case Calculation.Avg:
+        return 'Avg';
+      case Calculation.Max:
+        return 'Max';
+      case Calculation.Min:
+        return 'Min';
+      case Calculation.Percentiles:
+        return 'Percentiles';            
+  }
+}
+
 export function stringToCalculation(value: string): Calculation | undefined {
   if (
     Object.values(Calculation)

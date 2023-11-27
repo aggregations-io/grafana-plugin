@@ -10,6 +10,7 @@ import {
   MyDataSourceOptions,
   MyQuery,
   stringToCalculation,
+  calculationPretty,
 } from '../types';
 import {
   InlineFieldRow,
@@ -59,7 +60,7 @@ function selectableCalculation(value?: string | null): SelectableValue<Calculati
   }
 
   const conv = stringToCalculation(value);
-  return { label: conv?.toString(), value: conv };
+  return { label: conv === undefined?'': calculationPretty(conv) , value: conv };
 }
 export interface SharedProps extends QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions> {
   mode: string;
@@ -106,6 +107,12 @@ export class SharedEditor extends PureComponent<SharedProps> {
       props.query.filter_definition !== undefined
     ) {
       props.query.filterDefinitionName = props.query.filter_definition!.name;
+      if(props.query.selected_agg && props.query.selected_agg !== null){
+        props.query.filterDefinitionName = `${props.query.filterDefinitionName} - ${props.query.selected_agg.name}`;
+        if(props.query.calculation !== null){
+          props.query.filterDefinitionName = `${props.query.filterDefinitionName} - ${calculationPretty(props.query.calculation)}`;
+        }
+      }
     }
     if (
       props.query.filterId &&
@@ -238,7 +245,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
     const { onChange, query } = this.props;
     try {
       if (event.target.value.trim() !== '') {
-        onChange({ ...query, alias: event.target.value.trim() });
+        onChange({ ...query, alias: event.target.value });
       } else {
         onChange({ ...query, alias: null });
       }
