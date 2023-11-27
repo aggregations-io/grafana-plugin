@@ -128,7 +128,9 @@ func (d *handler) QueryData(ctx context.Context, req *backend.QueryDataRequest) 
 				response.Responses[this_q.q.RefID] = blank_response
 			} else if !this_q.is_valid {
 				var blank_response backend.DataResponse
-				blank_response.Error = fmt.Errorf("Invalid Query %q", this_q.q.RefID)
+				if this_q.qo.FilterId != "" {
+					blank_response.Error = fmt.Errorf("Invalid Query %q", this_q.q.RefID)
+				}
 				response.Responses[this_q.q.RefID] = blank_response
 			} else {
 				if this_q.qo.Mode == "variables" {
