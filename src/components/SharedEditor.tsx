@@ -62,7 +62,7 @@ function selectableCalculation(value?: string | null): SelectableValue<Calculati
   }
 
   const conv = stringToCalculation(value);
-  return { label: conv === undefined?'': calculationPretty(conv) , value: conv };
+  return { label: conv === undefined ? '' : calculationPretty(conv), value: conv };
 }
 export interface SharedProps extends QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions> {
   mode: string;
@@ -70,7 +70,7 @@ export interface SharedProps extends QueryEditorProps<DataSource, MyQuery, MyDat
 export class SharedEditor extends PureComponent<SharedProps> {
   constructor(props: SharedProps) {
     super(props);
-    
+
     //console.log('con',this.props.query);
     if (this.props.query.includeGroupingLabels === undefined) {
       this.props.query.includeGroupingLabels = true;
@@ -90,7 +90,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       ...query,
       datasourceId: props.datasource.id,
       excludeEmptyGroupings: false,
-      includeGroupingLabels: this.props.query.includeGroupingLabels || true,
+      includeGroupingLabels: this.props.query.includeGroupingLabels === undefined || this.props.query.includeGroupingLabels === null ? true : this.props.query.includeGroupingLabels,
       mode: props.mode,
     });
   }
@@ -111,9 +111,9 @@ export class SharedEditor extends PureComponent<SharedProps> {
       props.query.filter_definition !== undefined
     ) {
       props.query.filterDefinitionName = props.query.filter_definition!.name;
-      if(props.query.selected_agg && props.query.selected_agg !== null){
+      if (props.query.selected_agg && props.query.selected_agg !== null) {
         props.query.filterDefinitionName = `${props.query.filterDefinitionName} - ${props.query.selected_agg.name}`;
-        if(props.query.calculation !== null){
+        if (props.query.calculation !== null) {
           props.query.filterDefinitionName = `${props.query.filterDefinitionName} - ${calculationPretty(props.query.calculation)}`;
         }
       }
@@ -232,7 +232,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       } else {
         onChange({ ...query, percentile: null });
       }
-    } catch {}
+    } catch { }
   };
   onLimitChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onChange, query } = this.props;
@@ -243,7 +243,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       } else {
         onChange({ ...query, limit: null });
       }
-    } catch {}
+    } catch { }
   };
   onAliasChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onChange, query } = this.props;
@@ -253,7 +253,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       } else {
         onChange({ ...query, alias: null });
       }
-    } catch {}
+    } catch { }
   };
   onLimitTypeChange = (event: LimitType) => {
     const { onChange, query } = this.props;
@@ -288,13 +288,13 @@ export class SharedEditor extends PureComponent<SharedProps> {
     this.onRunQuery(this.props);
   };
 
-  onGroupingFilterIncludeChange =(event: boolean, grp: string)=>{
-    const { onChange, query } = this.props;    
-    if(!query.grouping_filter_includes || query.grouping_filter_includes === null){
+  onGroupingFilterIncludeChange = (event: boolean, grp: string) => {
+    const { onChange, query } = this.props;
+    if (!query.grouping_filter_includes || query.grouping_filter_includes === null) {
       query.grouping_filter_includes = {};
     }
     query.grouping_filter_includes[grp] = event;
-    
+
     onChange({ ...query, grouping_filter_includes: query.grouping_filter_includes });
     this.onRunQuery(this.props);
 
@@ -310,14 +310,14 @@ export class SharedEditor extends PureComponent<SharedProps> {
       delete query.grouping_filter_mapping[grp];
     } else {
       query.grouping_filter_mapping[grp] = event.value!;
-      if(event.value!.id === '$__agg'){
-        if(query.grouping_filter_includes === undefined || query.grouping_filter_includes===null){
-          query.grouping_filter_includes={};
+      if (event.value!.id === '$__agg') {
+        if (query.grouping_filter_includes === undefined || query.grouping_filter_includes === null) {
+          query.grouping_filter_includes = {};
         }
-        query.grouping_filter_includes[grp]=false;
+        query.grouping_filter_includes[grp] = false;
       }
     }
-    
+
     let str = '';
     if (Object.keys(query.grouping_filter_mapping).length > 0) {
       str = Object.entries(query.grouping_filter_mapping)
@@ -362,7 +362,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
           >
             <InlineSwitch
               onChange={this.onGroupingLabelChange}
-              value={this.props.query.includeGroupingLabels === null? false : this.props.query.includeGroupingLabels }
+              value={this.props.query.includeGroupingLabels === null ? false : this.props.query.includeGroupingLabels}
             ></InlineSwitch>
           </InlineField>
         </InlineFieldRow>
@@ -419,48 +419,48 @@ export class SharedEditor extends PureComponent<SharedProps> {
         grouping_filters = all_names.map((x) => {
           const selected =
             variables.find((z) => z.value?.id === (this.props.query.grouping_filter_mapping || {})[x]?.id) || null;
-            const force_exclude = selected!==null && selected.value?.id==='$__agg';
-            const force_include = selected === null;
-            const included = (this.props.query.grouping_filter_includes||{})[x];
-            //console.log('INCL:',x, (this.props.query.grouping_filter_includes||{})[x], included, selected);
+          const force_exclude = selected !== null && selected.value?.id === '$__agg';
+          const force_include = selected === null;
+          const included = (this.props.query.grouping_filter_includes || {})[x];
+          //console.log('INCL:',x, (this.props.query.grouping_filter_includes||{})[x], included, selected);
           return (
             <tr key={x}>
-              <td style={{width:'min-content'}}>
+              <td style={{ width: 'min-content' }}>
                 <InlineLabel width={'auto'}>{x}</InlineLabel>
               </td>
-              <td  style={{width:'min-content', textAlign:'center', verticalAlign:'middle'}}>
-              <Checkbox width="auto" disabled={force_exclude || force_include} value={force_exclude? false: force_include?true: included===undefined  ?true: included}  
-              onChange={(q) => this.onGroupingFilterIncludeChange(q.currentTarget.checked, x)}            
-              ></Checkbox>
+              <td style={{ width: 'min-content', textAlign: 'center', verticalAlign: 'middle' }}>
+                <Checkbox width="auto" disabled={force_exclude || force_include} value={force_exclude ? false : force_include ? true : included === undefined ? true : included}
+                  onChange={(q) => this.onGroupingFilterIncludeChange(q.currentTarget.checked, x)}
+                ></Checkbox>
               </td>
-              <td  style={{width:'100%'}}>
-              <Select
+              <td style={{ width: '100%' }}>
+                <Select
                   isClearable={true}
                   options={variables}
                   value={selected}
                   allowCustomValue={false}
                   onChange={(q) => this.onGroupingFilterMapSelectChange(q, x)}
-                  
+
                 />
               </td>
-            </tr>           
+            </tr>
           );
         });
         //grouping_filters.unshift(<div style={{ minWidth: '600px', height: 0 }}></div>, <h4>Grouping Filters</h4>);
-        grouping_filters_tbl =<><div style={{display:'flex', marginRight:'auto', flexDirection:'column'}}><div style={{ minWidth: '600px', height: 0 }}></div><h4>Grouping Filters</h4>
-        <table>
-                <thead><tr><th  style={{width:'min-content'}}><InlineLabel>Grouping</InlineLabel></th><th  style={{width:'min-content' }}><InlineLabel tooltip={"Whether to include this grouping as a returned series to be charted, or just apply the filter"}>Include</InlineLabel></th>
-                <th  style={{width:'100%'}}><InlineLabel>Filter</InlineLabel></th></tr></thead>
-                <tbody>{grouping_filters}</tbody>
-              </table>
-              </div>
+        grouping_filters_tbl = <><div style={{ display: 'flex', marginRight: 'auto', flexDirection: 'column' }}><div style={{ minWidth: '600px', height: 0 }}></div><h4>Grouping Filters</h4>
+          <table>
+            <thead><tr><th style={{ width: 'min-content' }}><InlineLabel>Grouping</InlineLabel></th><th style={{ width: 'min-content' }}><InlineLabel tooltip={"Whether to include this grouping as a returned series to be charted, or just apply the filter"}>Include</InlineLabel></th>
+              <th style={{ width: '100%' }}><InlineLabel>Filter</InlineLabel></th></tr></thead>
+            <tbody>{grouping_filters}</tbody>
+          </table>
+        </div>
         </>;
       }
     }
 
     let filter_field = (
       <InlineField label="Filter" labelWidth={15} tooltip="Specify Filter to work with">
-        {}
+        { }
         <Select
           allowCustomValue={false}
           value={selectable(this.props.query.filter_definition)}
@@ -486,7 +486,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
                 {this.this_is_query_editor && filter_field}
                 {!this.this_is_query_editor && (
                   <InlineField label="Grouping" labelWidth={20}>
-                    {}
+                    { }
                     <Select
                       allowCustomValue={false}
                       value={selectableString(this.props.query.groupingName)}
@@ -507,7 +507,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
                       label="Include Aggregate Option"
                       labelWidth={30}
                     >
-                      {}
+                      { }
                       <InlineSwitch
                         onChange={this.onIncludeAggChange}
                         value={this.props.query.includeAggregateOption}
@@ -519,7 +519,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
               <InlineFieldRow>
                 {this.this_is_query_editor && (
                   <InlineField label="Aggregation" labelWidth={15}>
-                    {}
+                    { }
                     <Select
                       allowCustomValue={false}
                       value={selectableFDAgg(this.props.query.selected_agg)}
@@ -537,7 +537,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
               <InlineFieldRow>
                 {this.this_is_query_editor && this.props.query != null && (
                   <InlineField label="Calculation" labelWidth={15}>
-                    {}
+                    { }
                     <Select
                       allowCustomValue={false}
                       value={selectableCalculation(this.props.query.calculation)}
@@ -559,7 +559,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
                       tooltip="Enter Percentile as Decimal between 0 and 1, so P99 should be '0.99'"
                       labelWidth={15}
                     >
-                      {}
+                      { }
                       <Input
                         type="number"
                         min="0"
@@ -583,7 +583,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
                     labelWidth={15}
                     tooltip="Per time slice, only include the Top/Bottom N grouped values."
                   >
-                    {}
+                    { }
                     <RadioButtonGroup<LimitType>
                       value={this.props.query.limitType || LimitType.Top}
                       options={limitTypes}
@@ -592,7 +592,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
                   </InlineField>
 
                   <InlineField>
-                    {}
+                    { }
 
                     <Input
                       type="number"
@@ -609,7 +609,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
                     />
                   </InlineField>
                   <InlineField label="Alias" labelWidth={15}>
-                    {}
+                    { }
 
                     <Input
                       type="text"
