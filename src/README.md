@@ -1,8 +1,8 @@
-# ![logo](https://github.com/aggregations-io/grafana-plugin/blob/880c5971ae36edfe6cfef386bf85892e7d025273/src/img/logo.svg) Aggregations.io
+# ![logo](https://aggregations.io/assets/images/logo.svg) Aggregations.io
 
 ## Real Time Monitoring Using Your Analytics Data
 
-![charts](https://github.com/aggregations-io/grafana-plugin/blob/880c5971ae36edfe6cfef386bf85892e7d025273/src/img/charts.png)
+![charts](https://aggregations.io/assets/images/grafana-charts.png)
 
 ### Before You Begin
 
@@ -12,7 +12,7 @@ Check out the full [docs](https://aggregations.io/docs/metrics/grafana/)
 
 ### Easy Setup
 
-![filter-setup](https://github.com/aggregations-io/grafana-plugin/blob/880c5971ae36edfe6cfef386bf85892e7d025273/src/img/filter-setup.png)
+![filter-setup](https://aggregations.io/assets/images/grafana-options.png)
 
 ### Features
 

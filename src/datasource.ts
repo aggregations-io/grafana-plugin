@@ -9,7 +9,7 @@ import {
 } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
 
-import { MyQuery, MyDataSourceOptions, DEFAULT_QUERY, FilterDefinition } from './types';
+import { MyQuery, MyDataSourceOptions, DEFAULT_QUERY, FilterDefinition, GroupingFilterItem } from './types';
 import { VariableEditor } from 'components/VariableEditor';
 import { uniqueId } from 'lodash';
 
@@ -33,7 +33,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     //console.log('scoped:',scopedVars)
     let s = getTemplateSrv();
     let curr = s.getVariables();
-    const rel: { [key: string]: string[] } = {};
+    const rel: { [key: string]: GroupingFilterItem } = {};
     let hasany = false;
     //console.log('curr:',curr);
     query.fast_mode = true;
@@ -44,27 +44,37 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
       Object.entries(query.grouping_filter_mapping).forEach((kv) => {
         let k = kv[0];
         let val = kv[1];
-        if (val.id === '$__agg') {
-          rel[k] = [val.id];
+         let fi =  {} as GroupingFilterItem;
+         fi.grouping=k;
+         
+        if (val.id === '$__agg') {          
+          fi.filters =  [val.id];
+          fi.returnGroupingValues=false;
           hasany = true;
         } else {
+          if(query.grouping_filter_includes!=null && query.grouping_filter_includes[k]!==undefined){
+            fi.returnGroupingValues=query.grouping_filter_includes[k];            
+          }else{
+            fi.returnGroupingValues=true;
+          }
           let matching = curr.find(
             (x) => x.id === val.id || (x.type === 'query' && (x.query as MyQuery)?.rand_id === val.id)
           ) as VariableWithOptions;
           if (matching !== undefined) {
             if (scopedVars[matching.id] !== undefined) {
-              rel[k] = [scopedVars[matching.id]?.value];
+              fi.filters=[scopedVars[matching.id]?.value];              
             } else {
               if (typeof matching.current.value === 'string') {
-                rel[k] = [matching.current.value];
+                fi.filters = [matching.current.value];
               } else {
-                rel[k] = matching.current.value;
+                fi.filters = matching.current.value;
               }
             }
 
             hasany = true;
           }
         }
+        rel[k]=fi;
       });
     }
     // for(var i=0;i<curr.length;i++){
@@ -77,7 +87,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     //console.log(rel);
     const interpolatedQuery: MyQuery = {
       ...query,
-      groupingFilters: hasany ? rel : null,
+      groupingFilters: hasany ? Object.values(rel).map(z=> z) : null,
     };
     return interpolatedQuery;
   }

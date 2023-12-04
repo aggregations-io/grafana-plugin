@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 )
@@ -12,9 +11,7 @@ import (
 func (d *handler) GetFilterDefinitions(rw http.ResponseWriter, req *http.Request) {
 	pluginCtx := httpadapter.PluginConfigFromContext(req.Context())
 	api_token := pluginCtx.DataSourceInstanceSettings.DecryptedSecureJSONData["apiKey"]
-	client := &http.Client{
-		Timeout: time.Second * 10, // Set an appropriate timeout value
-	}
+	client := d.httpClient
 
 	request, err := http.NewRequest("GET", url_base+"filter-definitions", nil)
 	if err != nil {

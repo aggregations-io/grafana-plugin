@@ -7,6 +7,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 )
 
 func newDataSource(settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -18,9 +19,9 @@ func newDataSource(settings backend.DataSourceInstanceSettings) (instancemgmt.In
 	return nil, nil
 }
 func main() {
-	err := datasource.Serve(handler.New(newDataSource))
-	if err != nil {
-		backend.Logger.Error("Error serving requests: ", err.Error())
+
+	if err := datasource.Manage("aggregations-io-datasource", handler.NewDatasource, handler.DatasourceOpts); err != nil {
+		log.DefaultLogger.Error(err.Error())
 		os.Exit(1)
 	}
 }

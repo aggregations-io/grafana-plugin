@@ -12,7 +12,9 @@ export interface MyQuery extends DataQuery {
   calculation: Calculation | null;
   limit: number | null;
   limitType: LimitType | null;
-  groupingFilters: { [key: string]: string[] } | null;
+  //groupingFilters: { [key: string]: string[] } | null;
+  groupingFilters: GroupingFilterItem[] | null;
+  grouping_filter_includes: {[key: string]: boolean} | null;
   grouping_filter_mapping: { [key: string]: GroupingFilterMappingItem } | null;
   grouping_filter_mapping_str: string;
   datasourceId: number | null;
@@ -30,6 +32,12 @@ export interface MyQuery extends DataQuery {
   includeIncompleteIntervals: boolean;
   percentile: number | null;
   fast_mode: boolean;
+}
+
+export interface GroupingFilterItem {
+  grouping: string;
+  filters: string[] | null;
+  returnGroupingValues: boolean;
 }
 
 export interface GroupingFilterMappingItem {
@@ -89,7 +97,7 @@ export enum Calculation {
   Percentiles = 'PERCENTILES',
 }
 
-export function calculationPretty(value: Calculation ):string {
+export function calculationPretty(value: Calculation ): string {
    switch(value){
     case Calculation.Count:
       return 'Count';          

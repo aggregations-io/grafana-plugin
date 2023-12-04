@@ -22,6 +22,8 @@ import {
   InlineSwitch,
   HorizontalGroup,
   stylesFactory,
+  Checkbox,
+  InlineLabel,
 } from '@grafana/ui';
 import { getTemplateSrv } from '@grafana/runtime';
 import { css } from '@emotion/css';
@@ -68,6 +70,8 @@ export interface SharedProps extends QueryEditorProps<DataSource, MyQuery, MyDat
 export class SharedEditor extends PureComponent<SharedProps> {
   constructor(props: SharedProps) {
     super(props);
+    
+    //console.log('con',this.props.query);
     if (this.props.query.includeGroupingLabels === undefined) {
       this.props.query.includeGroupingLabels = true;
     }
@@ -284,6 +288,17 @@ export class SharedEditor extends PureComponent<SharedProps> {
     this.onRunQuery(this.props);
   };
 
+  onGroupingFilterIncludeChange =(event: boolean, grp: string)=>{
+    const { onChange, query } = this.props;    
+    if(!query.grouping_filter_includes || query.grouping_filter_includes === null){
+      query.grouping_filter_includes = {};
+    }
+    query.grouping_filter_includes[grp] = event;
+    
+    onChange({ ...query, grouping_filter_includes: query.grouping_filter_includes });
+    this.onRunQuery(this.props);
+
+  }
   onGroupingFilterMapSelectChange = (event: SelectableValue<GroupingFilterMappingItem>, grp: string) => {
     const { onChange, query } = this.props;
     //console.log('qfmsc', query.grouping_filter_mapping, event, grp);
@@ -295,14 +310,21 @@ export class SharedEditor extends PureComponent<SharedProps> {
       delete query.grouping_filter_mapping[grp];
     } else {
       query.grouping_filter_mapping[grp] = event.value!;
+      if(event.value!.id === '$__agg'){
+        if(query.grouping_filter_includes === undefined || query.grouping_filter_includes===null){
+          query.grouping_filter_includes={};
+        }
+        query.grouping_filter_includes[grp]=false;
+      }
     }
+    
     let str = '';
     if (Object.keys(query.grouping_filter_mapping).length > 0) {
       str = Object.entries(query.grouping_filter_mapping)
         .map((x) => `${x[0]}="\$${x[1].name}"`)
         .join('|');
     }
-    onChange({ ...query, grouping_filter_mapping: query.grouping_filter_mapping, grouping_filter_mapping_str: str });
+    onChange({ ...query, grouping_filter_mapping: query.grouping_filter_mapping, grouping_filter_mapping_str: str, grouping_filter_includes: query.grouping_filter_includes });
     this.onRunQuery(this.props);
   };
   render() {
@@ -313,6 +335,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       this.props.query.filter_definition.groupings.length > 0;
     let grouping_ops;
     let grouping_filters;
+    let grouping_filters_tbl;
 
     if (show_grouping_ops) {
       grouping_ops = (
@@ -339,7 +362,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
           >
             <InlineSwitch
               onChange={this.onGroupingLabelChange}
-              value={this.props.query.includeGroupingLabels || false}
+              value={this.props.query.includeGroupingLabels === null? false : this.props.query.includeGroupingLabels }
             ></InlineSwitch>
           </InlineField>
         </InlineFieldRow>
@@ -396,22 +419,42 @@ export class SharedEditor extends PureComponent<SharedProps> {
         grouping_filters = all_names.map((x) => {
           const selected =
             variables.find((z) => z.value?.id === (this.props.query.grouping_filter_mapping || {})[x]?.id) || null;
+            const force_exclude = selected!==null && selected.value?.id==='$__agg';
+            const force_include = selected === null;
+            const included = (this.props.query.grouping_filter_includes||{})[x];
+            //console.log('INCL:',x, (this.props.query.grouping_filter_includes||{})[x], included, selected);
           return (
-            <InlineFieldRow width={'100%'} key={x}>
-              <InlineField label={x} labelWidth={20}>
-                <Select
+            <tr key={x}>
+              <td style={{width:'min-content'}}>
+                <InlineLabel width={'auto'}>{x}</InlineLabel>
+              </td>
+              <td  style={{width:'min-content', textAlign:'center', verticalAlign:'middle'}}>
+              <Checkbox width="auto" disabled={force_exclude || force_include} value={force_exclude? false: force_include?true: included===undefined  ?true: included}  
+              onChange={(q) => this.onGroupingFilterIncludeChange(q.currentTarget.checked, x)}            
+              ></Checkbox>
+              </td>
+              <td  style={{width:'100%'}}>
+              <Select
                   isClearable={true}
                   options={variables}
                   value={selected}
                   allowCustomValue={false}
                   onChange={(q) => this.onGroupingFilterMapSelectChange(q, x)}
-                  width="auto"
+                  
                 />
-              </InlineField>
-            </InlineFieldRow>
+              </td>
+            </tr>           
           );
         });
-        grouping_filters.unshift(<div style={{ minWidth: '600px', height: 0 }}></div>, <h4>Grouping Filters</h4>);
+        //grouping_filters.unshift(<div style={{ minWidth: '600px', height: 0 }}></div>, <h4>Grouping Filters</h4>);
+        grouping_filters_tbl =<><div style={{display:'flex', marginRight:'auto', flexDirection:'column'}}><div style={{ minWidth: '600px', height: 0 }}></div><h4>Grouping Filters</h4>
+        <table>
+                <thead><tr><th  style={{width:'min-content'}}><InlineLabel>Grouping</InlineLabel></th><th  style={{width:'min-content' }}><InlineLabel tooltip={"Whether to include this grouping as a returned series to be charted, or just apply the filter"}>Include</InlineLabel></th>
+                <th  style={{width:'100%'}}><InlineLabel>Filter</InlineLabel></th></tr></thead>
+                <tbody>{grouping_filters}</tbody>
+              </table>
+              </div>
+        </>;
       }
     }
 
@@ -585,7 +628,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
             </VerticalGroup>
           </div>
           <VerticalGroup align="flex-start" hidden={!this.this_is_query_editor}>
-            {grouping_filters}
+            {grouping_filters_tbl}
           </VerticalGroup>
         </HorizontalGroup>
       </div>

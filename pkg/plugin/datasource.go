@@ -14,6 +14,7 @@ import (
 	"github.com/ahmetb/go-linq/v3"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -32,15 +33,42 @@ var (
 
 type handler struct {
 	instanceManager instancemgmt.InstanceManager
+	settings        backend.DataSourceInstanceSettings
+	resourceHandler backend.CallResourceHandler
+	httpClient      *http.Client
 }
 
-func New(fn datasource.InstanceFactoryFunc) datasource.ServeOpts {
-	h := &handler{instanceManager: datasource.NewInstanceManager(fn)}
+func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	opts, err := settings.HTTPClientOptions(ctx)
+	opts.Timeouts.Timeout = 10 * time.Second
+	if err != nil {
+		return nil, fmt.Errorf("http client options: %w", err)
+	}
 
-	// CallResourceHandler
+	// Uncomment the following to forward all HTTP headers in the requests made by the client
+	// (disabled by default since SDK v0.161.0)
+	// opts.ForwardHTTPHeaders = true
+
+	// Using httpclient.New without any provided httpclient.Options creates a new HTTP client with a set of
+	// default middlewares (httpclient.DefaultMiddlewares) providing additional built-in functionality, such as:
+	//	- TracingMiddleware (creates spans for each outgoing HTTP request)
+	//	- BasicAuthenticationMiddleware (populates Authorization header if basic authentication been configured via the
+	//		DataSourceHttpSettings component from @grafana/ui)
+	//	- CustomHeadersMiddleware (populates headers if Custom HTTP Headers been configured via the DataSourceHttpSettings
+	//		component from @grafana/ui)
+	//	- ContextualMiddleware (custom middlewares per context.Context, see httpclient.WithContextualMiddleware)
+	cl, err := httpclient.New(opts)
+	if err != nil {
+		return nil, fmt.Errorf("httpclient new: %w", err)
+	}
+
+	h := &handler{
+		settings:   settings,
+		httpClient: cl,
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/filterDefinitions", h.GetFilterDefinitions)
-
 	// QueryDataHandler
 	queryTypeMux := datasource.NewQueryTypeMux()
 	queryTypeMux.HandleFunc("query", h.QueryData)
@@ -50,14 +78,20 @@ func New(fn datasource.InstanceFactoryFunc) datasource.ServeOpts {
 		CheckHealthHandler:  h,
 		CallResourceHandler: httpadapter.New(mux),
 		QueryDataHandler:    queryTypeMux,
-	}
+	}, nil
+
 }
+
+// DatasourceOpts contains the default ManageOpts for the datasource.
+var DatasourceOpts = datasource.ManageOpts{}
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
 // created. As soon as datasource settings change detected by SDK old datasource instance will
 // be disposed and a new one will be created using NewSampleDatasource factory function.
 func (d *handler) Dispose() {
 	// Clean up datasource instance resources.
+	d.httpClient.CloseIdleConnections()
+
 }
 
 type qos_return struct {
@@ -198,9 +232,7 @@ func (d *handler) queryMulti(_ context.Context, password string, Ctx backend.Plu
 	}
 
 	PrintJson(qos_map)
-	client := &http.Client{
-		Timeout: time.Second * 10, // Set an appropriate timeout value
-	}
+	client := d.httpClient
 
 	payloadbytes, err := json.Marshal(qos)
 	if err != nil {
@@ -420,9 +452,7 @@ func parseResponseData(responseData []byte) ([]MetricResult, error) {
 func (d *handler) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	pluginCtx := req.PluginContext
 	api_token := pluginCtx.DataSourceInstanceSettings.DecryptedSecureJSONData["apiKey"]
-	client := &http.Client{
-		Timeout: time.Second * 10, // Set an appropriate timeout value
-	}
+	client := d.httpClient
 
 	request, err := http.NewRequest("GET", url_base+"organization/ping", nil)
 	if err != nil {

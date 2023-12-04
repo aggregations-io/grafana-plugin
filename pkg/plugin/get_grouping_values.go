@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -16,9 +15,7 @@ import (
 func (d *handler) queryGroupings(_ context.Context, password string, Ctx backend.PluginContext, query backend.DataQuery, qo QueryOptions) backend.DataResponse {
 	var response backend.DataResponse
 
-	client := &http.Client{
-		Timeout: time.Second * 10, // Set an appropriate timeout value
-	}
+	client := d.httpClient
 
 	payloadbytes, err := json.Marshal(qo)
 	if err != nil {

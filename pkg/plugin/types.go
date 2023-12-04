@@ -41,29 +41,35 @@ type FilterDefinitionAggregation struct {
 	Name             string        `json:"name"`
 }
 
+type GroupingOrFilterItem struct {
+	Grouping             string    `json:"grouping"`
+	Filters              *[]string `json:"filters"`
+	ReturnGroupingValues bool      `json:"returnGroupingValues"`
+}
+
 type QueryOptions struct {
-	FilterId                   string              `json:"filterId"`
-	StartTime                  string              `json:"startTime"`
-	EndTime                    string              `json:"endTime"`
-	GroupingFilters            map[string][]string `json:"groupingFilters"`
-	AggregationId              int                 `json:"aggregationId"`
-	Calculation                Calculation         `json:"calculation"`
-	LimitN                     *int                `json:"limit"`
-	LimitType                  *LimitType          `json:"limitType"`
-	Alias                      string              `json:"alias"`
-	ExcludeEmpty               bool                `json:"excludeEmptyGroupings"`
-	Hide                       null.Bool           `json:"hide"`
-	FilterDefinitionName       string              `json:"filterDefinitionName"`
-	LongResult                 null.Bool           `json:"longResult"`
-	IncludeGroupingLabels      bool                `json:"includeGroupingLabels"`
-	SpecificGrouping           string              `json:"groupingName"`
-	Mode                       string              `json:"mode"`
-	IncludeAggregateOption     bool                `json:"includeAggregateOption"`
-	IncludeIncompleteIntervals bool                `json:"includeIncompleteIntervals"`
-	Percentile                 null.Float          `json:"percentile"`
-	Optimized                  bool                `json:"optimized"`
-	QueryId                    string              `json:"queryId"`
-	FastMode                   bool                `json:"fast_mode"`
+	FilterId                   string                  `json:"filterId"`
+	StartTime                  string                  `json:"startTime"`
+	EndTime                    string                  `json:"endTime"`
+	GroupingFilters            *[]GroupingOrFilterItem `json:"groupingFilters"`
+	AggregationId              int                     `json:"aggregationId"`
+	Calculation                Calculation             `json:"calculation"`
+	LimitN                     *int                    `json:"limit"`
+	LimitType                  *LimitType              `json:"limitType"`
+	Alias                      string                  `json:"alias"`
+	ExcludeEmpty               bool                    `json:"excludeEmptyGroupings"`
+	Hide                       null.Bool               `json:"hide"`
+	FilterDefinitionName       string                  `json:"filterDefinitionName"`
+	LongResult                 null.Bool               `json:"longResult"`
+	IncludeGroupingLabels      bool                    `json:"includeGroupingLabels"`
+	SpecificGrouping           string                  `json:"groupingName"`
+	Mode                       string                  `json:"mode"`
+	IncludeAggregateOption     bool                    `json:"includeAggregateOption"`
+	IncludeIncompleteIntervals bool                    `json:"includeIncompleteIntervals"`
+	Percentile                 null.Float              `json:"percentile"`
+	Optimized                  bool                    `json:"optimized"`
+	QueryId                    string                  `json:"queryId"`
+	FastMode                   bool                    `json:"fast_mode"`
 }
 
 type MetricResult struct {
