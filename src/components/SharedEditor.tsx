@@ -337,6 +337,16 @@ export class SharedEditor extends PureComponent<SharedProps> {
     let grouping_filters;
     let grouping_filters_tbl;
 
+
+grouping_ops=<InlineFieldRow>
+  <InlineField label="Incomplete Intervals" labelWidth={25} tooltip={'Allow showing incomplete intervals.'}>
+            <InlineSwitch
+              onChange={this.onIncompleteIntervalsChange}
+              value={this.props.query.includeIncompleteIntervals}
+            ></InlineSwitch>
+          </InlineField>
+</InlineFieldRow>;
+
     if (show_grouping_ops) {
       grouping_ops = (
         <InlineFieldRow>
