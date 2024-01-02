@@ -78,6 +78,12 @@ export class SharedEditor extends PureComponent<SharedProps> {
     if (this.props.query.includeIncompleteIntervals === undefined) {
       this.props.query.includeIncompleteIntervals = true;
     }
+    if(this.props.query.shouldRecalculate === undefined){
+      this.props.query.shouldRecalculate = false;
+    }
+    if(this.props.query.longResult === undefined){
+      this.props.query.longResult = false;
+    }
     this.this_is_query_editor = props.mode === 'query';
     this.onRunQuery = this.onRunQuery.bind(this);
     //console.log(this.props)
@@ -266,6 +272,13 @@ export class SharedEditor extends PureComponent<SharedProps> {
     this.onRunQuery(this.props);
   };
 
+
+  onShouldRecalculateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onChange, query } = this.props;
+    onChange({ ...query, shouldRecalculate: event.target.checked });
+    this.onRunQuery(this.props);
+  };
+
   onLongChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onChange, query } = this.props;
     onChange({ ...query, longResult: event.target.checked });
@@ -274,6 +287,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
 
   onIncludeAggChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onChange, query } = this.props;
+
     onChange({ ...query, includeAggregateOption: event.target.checked });
   };
 
@@ -337,15 +351,25 @@ export class SharedEditor extends PureComponent<SharedProps> {
     let grouping_filters;
     let grouping_filters_tbl;
 
+let incomplete_intervals=<InlineField label="Incomplete Intervals" labelWidth={22} tooltip={'Allow showing incomplete intervals.'}>
+<InlineSwitch
+  onChange={this.onIncompleteIntervalsChange}
+  value={this.props.query.includeIncompleteIntervals}
+></InlineSwitch>
+</InlineField>;
+let recalc_intervals=<InlineField label="Recalculate Intervals" labelWidth={22} tooltip={'Should results be re-aggregated to fit, according to Query Options defined above?'}>
+<InlineSwitch
+  onChange={this.onShouldRecalculateChange}
+  value={this.props.query.shouldRecalculate}
+></InlineSwitch>
+</InlineField>;
+if(this.this_is_query_editor){
+  grouping_ops=<InlineFieldRow>
+  {incomplete_intervals}
+  {recalc_intervals} 
+ </InlineFieldRow>;
+}
 
-grouping_ops=<InlineFieldRow>
-  <InlineField label="Incomplete Intervals" labelWidth={25} tooltip={'Allow showing incomplete intervals.'}>
-            <InlineSwitch
-              onChange={this.onIncompleteIntervalsChange}
-              value={this.props.query.includeIncompleteIntervals}
-            ></InlineSwitch>
-          </InlineField>
-</InlineFieldRow>;
 
     if (show_grouping_ops) {
       grouping_ops = (
@@ -359,12 +383,8 @@ grouping_ops=<InlineFieldRow>
           >
             <InlineSwitch onChange={this.onLongChange} value={this.props.query.longResult}></InlineSwitch>
           </InlineField>
-          <InlineField label="Incomplete Intervals" labelWidth={25} tooltip={'Allow showing incomplete intervals.'}>
-            <InlineSwitch
-              onChange={this.onIncompleteIntervalsChange}
-              value={this.props.query.includeIncompleteIntervals}
-            ></InlineSwitch>
-          </InlineField>
+          {incomplete_intervals}
+          {recalc_intervals}
           <InlineField
             label="Grouping Labels"
             labelWidth={20}
@@ -469,7 +489,7 @@ grouping_ops=<InlineFieldRow>
     }
 
     let filter_field = (
-      <InlineField label="Filter" labelWidth={15} tooltip="Specify Filter to work with">
+      <InlineField label="Filter" labelWidth={this.this_is_query_editor?15:30} tooltip="Specify Filter to work with">
         { }
         <Select
           allowCustomValue={false}
@@ -488,14 +508,14 @@ grouping_ops=<InlineFieldRow>
     return (
       <div className="upper">
         <HorizontalGroup width="100%" align="flex-start" justify="space-between" spacing="xs">
-          <div style={{ width: '90%' }}>
+          <div style={{ width: '95%' }}>
             {/* width={this.props.query.filter_definition && this.props.query.filter_definition.groupings && this.props.query.filter_definition.groupings.length > 0 ? '60%' : '100%'} */}
             <VerticalGroup>
               {!this.this_is_query_editor && <InlineFieldRow>{filter_field}</InlineFieldRow>}
               <InlineFieldRow>
                 {this.this_is_query_editor && filter_field}
                 {!this.this_is_query_editor && (
-                  <InlineField label="Grouping" labelWidth={20}>
+                  <InlineField label="Grouping" labelWidth={this.this_is_query_editor?15:30}>
                     { }
                     <Select
                       allowCustomValue={false}

@@ -12,7 +12,7 @@ Check out the full [docs](https://aggregations.io/docs/metrics/grafana/)
 
 ### Easy Setup
 
-![filter-setup](https://aggregations.io/assets/images/grafana-options.png)
+![filter-setup](https://aggregations.io/assets/images/grafana-options-v112.png)
 
 ### Features
 
@@ -21,6 +21,7 @@ Check out the full [docs](https://aggregations.io/docs/metrics/grafana/)
 - Repeated Panels
 - Long (tabular) Data Option
 - Label Controls
+- Data Reaggregation/Rollups
 
 ### Any Questions?
 

@@ -26,11 +26,17 @@ const (
 )
 
 type FilterDefinition struct {
-	FilterId     string                        `json:"id"`
-	Name         string                        `json:"name"`
-	Filter       string                        `json:"filter"`
-	Groupings    *[]string                     `json:"groupings"`
-	Aggregations []FilterDefinitionAggregation `json:"aggregations"`
+	FilterId      string                        `json:"id"`
+	Name          string                        `json:"name"`
+	Filter        string                        `json:"filter"`
+	Groupings     *[]string                     `json:"groupings"`
+	Aggregations  []FilterDefinitionAggregation `json:"aggregations"`
+	GroupingItems *[]FilterGroupingItem         `json:"groupingItems"`
+}
+
+type FilterGroupingItem struct {
+	Grouping string `json:"grouping"`
+	Alias    string `json:"alias"`
 }
 
 type FilterDefinitionAggregation struct {
@@ -70,6 +76,13 @@ type QueryOptions struct {
 	Optimized                  bool                    `json:"optimized"`
 	QueryId                    string                  `json:"queryId"`
 	FastMode                   bool                    `json:"fast_mode"`
+	ShouldRecalculate          bool                    `json:"shouldRecalculate"`
+	RecalculatedInterval       *RecalculateInterval    `json:"recalculatedInterval"`
+}
+
+type RecalculateInterval struct {
+	Type      string `json:"type"`
+	Frequency int64  `json:"frequency"`
 }
 
 type MetricResult struct {

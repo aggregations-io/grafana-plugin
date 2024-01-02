@@ -32,7 +32,10 @@ export interface MyQuery extends DataQuery {
   includeIncompleteIntervals: boolean;
   percentile: number | null;
   fast_mode: boolean;
+  shouldRecalculate: boolean;
 }
+
+
 
 export interface GroupingFilterItem {
   grouping: string;
