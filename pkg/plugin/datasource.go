@@ -41,6 +41,8 @@ type handler struct {
 func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	opts, err := settings.HTTPClientOptions(ctx)
 	opts.Timeouts.Timeout = 10 * time.Second
+	opts.Headers["X-IS-GRAFANA"] = "1"
+
 	if err != nil {
 		return nil, fmt.Errorf("http client options: %w", err)
 	}
@@ -127,8 +129,13 @@ func (d *handler) QueryData(ctx context.Context, req *backend.QueryDataRequest) 
 			ret.had_err = false
 			this_qo.QueryId = (q.(backend.DataQuery).RefID)
 			this_qo.Optimized = true
+			if this_qo.ShouldRecalculate {
+				this_qo.RecalculatedInterval = &RecalculateInterval{Type: "SECOND", Frequency: int64(q.(backend.DataQuery).Interval.Abs().Seconds())}
+			}
+
 			ret.q = q.(backend.DataQuery)
 			ret.qo = &this_qo
+
 			ret.is_valid = !(this_qo.FilterId == "" || (this_qo.Calculation == PERCENTILES && (!this_qo.Percentile.Valid || this_qo.Percentile.Float64 <= 0 || this_qo.Percentile.Float64 > 1)))
 			if this_qo.Mode == "variables" {
 				ret.is_valid = ret.is_valid && this_qo.SpecificGrouping != ""
