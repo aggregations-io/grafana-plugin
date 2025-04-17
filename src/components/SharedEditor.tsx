@@ -11,7 +11,7 @@ import {
   MyQuery,
   stringToCalculation,
   calculationPretty,
-  
+
 } from '../types';
 import {
   InlineFieldRow,
@@ -27,9 +27,9 @@ import {
   InlineLabel,
   AsyncVirtualizedSelect,
   AsyncSelect,
-  AsyncMultiSelect,    
+  AsyncMultiSelect,
 } from '@grafana/ui';
-import {  getTemplateSrv } from '@grafana/runtime';
+import { getTemplateSrv } from '@grafana/runtime';
 import { css } from '@emotion/css';
 import '../styles.css';
 
@@ -99,7 +99,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
     this.onRunQuery = this.onRunQuery.bind(this);
     //console.log(this.props)
     this.known_filters = [];
-    this.known_options={};
+    this.known_options = {};
     if (cloned.rand_id === undefined) {
       cloned.rand_id = Math.random().toString(20).substring(2, 8);
     }
@@ -115,7 +115,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
   styles = getStyles();
   this_is_query_editor: boolean;
   known_filters: Array<SelectableValue<FilterDefinition>>;
-  known_options: {[key:string]:Array<SelectableValue<string>>};
+  known_options: { [key: string]: Array<SelectableValue<string>> };
   got_filters = false;
   onRunQuery(
     props: Readonly<SharedProps> &
@@ -129,7 +129,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       props.query.filter_definition !== null &&
       props.query.filter_definition !== undefined
     ) {
-      
+
       props.query.filterDefinitionName = props.query.filter_definition!.name;
       if (props.query.selected_agg && props.query.selected_agg !== null) {
         props.query.filterDefinitionName = `${props.query.filterDefinitionName} - ${props.query.selected_agg.name}`;
@@ -185,15 +185,15 @@ export class SharedEditor extends PureComponent<SharedProps> {
     return result;
   }
 
-  async getFilterOptions(grouping_name:string, id:string|null,  datasource: DataSource, range: { from: DateTime; to: DateTime; raw: any }): Promise<SelectableValue<string>[]> {
-    if(id===null){
+  async getFilterOptions(grouping_name: string, id: string | null, datasource: DataSource, range: { from: DateTime; to: DateTime; raw: any }): Promise<SelectableValue<string>[]> {
+    if (id === null) {
       return [];
-    }    
-    if (!this.known_options[grouping_name||'-'||id]) {
-      const mqf:MyQuery = {
-        ... this.props.query,        
+    }
+    if (!this.known_options[grouping_name || '-' || id]) {
+      const mqf: MyQuery = {
+        ... this.props.query,
         groupingName: grouping_name,
-        includeAggregateOption: false,              
+        includeAggregateOption: false,
         mode: 'variables',
         refId: 'variableCheck',
       };
@@ -206,31 +206,31 @@ export class SharedEditor extends PureComponent<SharedProps> {
         requestId: 'dropdown-query',
         timezone: 'browser',
         app: 'panel',
-        startTime:range.from.toDate().valueOf(),
-        intervalMs: 30000,        
+        startTime: range.from.toDate().valueOf(),
+        intervalMs: 30000,
       };
 
-      
 
-    
-  const results: Array<SelectableValue<string>> = [];
 
-   await datasource.query(request).forEach(n=>{    
-    for(const d of n.data){
-      if(isDataFrame(d)){        
-        for(let i=0; i<d.fields[0].values.length;i++){          
-          const val = d.fields[0].values.get(i);          
-          results.push({label: val, value: val })
+
+      const results: Array<SelectableValue<string>> = [];
+
+      await datasource.query(request).forEach(n => {
+        for (const d of n.data) {
+          if (isDataFrame(d)) {
+            for (let i = 0; i < d.fields[0].values.length; i++) {
+              const val = d.fields[0].values.get(i);
+              results.push({ label: val, value: val })
+            }
+          }
         }
-      }    
-    }
-  });
+      });
 
-this.known_options[grouping_name||'-'||id]=results;
-  return results;    
+      this.known_options[grouping_name || '-' || id] = results;
+      return results;
     } else {
-      return this.known_options[grouping_name||'-'||id];
-    }    
+      return this.known_options[grouping_name || '-' || id];
+    }
   }
 
   onFilterDefinitionChange = (event: SelectableValue<FilterDefinition>) => {
@@ -375,44 +375,46 @@ this.known_options[grouping_name||'-'||id]=results;
     this.onRunQuery(this.props);
 
   }
-  onGroupingOptionsSelectedChange = (event: Array<SelectableValue<string>>, grp: string )=>{
-    this.changeMap(true,grp,event);    
+  onGroupingOptionsSelectedChange = (event: Array<SelectableValue<string>>, grp: string) => {
+    this.changeMap(true, grp, event);
   }
 
   onGroupingFilterMapSelectChange = (event: SelectableValue<GroupingFilterMappingItem>, grp: string) => {
-    
-    this.changeMap(false,grp,event);
-     
+
+    this.changeMap(false, grp, event);
+
   };
 
-  changeMap = ( is_manual: boolean, grp:string, event: Array<SelectableValue<string>> | SelectableValue<GroupingFilterMappingItem>)=>{
+  changeMap = (is_manual: boolean, grp: string, event: Array<SelectableValue<string>> | SelectableValue<GroupingFilterMappingItem>) => {
     const { onChange, query } = this.props;
     const newMap = { ...(query.grouping_filter_mapping || {}) };
     const newIncludes = { ...(query.grouping_filter_includes || {}) };
-    if(Array.isArray(event)){
+    if (Array.isArray(event)) {
       newMap[grp] = {
         id: '$__manual',
-        name:'$__manual',
-        manual_values: event.map(x=> x.value!)
-      };      
-    }else if(!event?.value){
+        name: '$__manual',
+        manual_values: event.map(x => x.value!)
+      };
+    } else if (!event?.value) {
       delete newMap[grp];
     }
-    else{
+    else {
       newMap[grp] = event.value;
       if (event.value.id === '$__agg') {
         newIncludes[grp] = false;
-      }     
+      }
     }
     if (query.grouping_filter_mapping == null) {
       query.grouping_filter_mapping = {};
     }
-    onChange({ ...query, grouping_filter_mapping: newMap, 
+    onChange({
+      ...query, grouping_filter_mapping: newMap,
       grouping_filter_mapping_str: Object.entries(newMap)
-      .filter(([k,v])=> v.id!=='$__manual')
-      .map(([k, v]) => `${k}="\$${v.name}"`)
-      .join('|'), 
-      grouping_filter_includes: newIncludes });
+        .filter(([k, v]) => v.id !== '$__manual')
+        .map(([k, v]) => `${k}="\$${v.name}"`)
+        .join('|'),
+      grouping_filter_includes: newIncludes
+    });
     this.onRunQuery(this.props);
   }
 
@@ -424,27 +426,27 @@ this.known_options[grouping_name||'-'||id]=results;
       this.props.query.filter_definition.groupings.length > 0;
     let grouping_ops;
     let grouping_filters;
-    let grouping_filters_any_manual:boolean;
+    let grouping_filters_any_manual: boolean;
     let grouping_filters_tbl;
 
-let incomplete_intervals=<InlineField label="Incomplete Intervals" labelWidth={22} tooltip={'Allow showing incomplete intervals.'}>
-<InlineSwitch
-  onChange={this.onIncompleteIntervalsChange}
-  value={this.props.query.includeIncompleteIntervals}
-></InlineSwitch>
-</InlineField>;
-let recalc_intervals=<InlineField label="Recalculate Intervals" labelWidth={22} tooltip={'Should results be re-aggregated to fit, according to Query Options defined above?'}>
-<InlineSwitch
-  onChange={this.onShouldRecalculateChange}
-  value={this.props.query.shouldRecalculate}
-></InlineSwitch>
-</InlineField>;
-if(this.this_is_query_editor){
-  grouping_ops=<InlineFieldRow>
-  {incomplete_intervals}
-  {recalc_intervals} 
- </InlineFieldRow>;
-}
+    let incomplete_intervals = <InlineField label="Incomplete Intervals" labelWidth={22} tooltip={'Allow showing incomplete intervals.'}>
+      <InlineSwitch
+        onChange={this.onIncompleteIntervalsChange}
+        value={this.props.query.includeIncompleteIntervals}
+      ></InlineSwitch>
+    </InlineField>;
+    let recalc_intervals = <InlineField label="Recalculate Intervals" labelWidth={22} tooltip={'Should results be re-aggregated to fit, according to Query Options defined above?'}>
+      <InlineSwitch
+        onChange={this.onShouldRecalculateChange}
+        value={this.props.query.shouldRecalculate}
+      ></InlineSwitch>
+    </InlineField>;
+    if (this.this_is_query_editor) {
+      grouping_ops = <InlineFieldRow>
+        {incomplete_intervals}
+        {recalc_intervals}
+      </InlineFieldRow>;
+    }
 
 
     if (show_grouping_ops) {
@@ -516,7 +518,7 @@ if(this.this_is_query_editor){
         description: 'do not include this grouping',
       });
       variables.unshift({
-        value: {id: '$__manual', name: '$__manual'},
+        value: { id: '$__manual', name: '$__manual' },
         label: 'MANUAL',
         description: 'input manual options to include in this filter'
       });
@@ -527,23 +529,23 @@ if(this.this_is_query_editor){
         ]),
       ];
       if (all_names.length > 0) {
-        grouping_filters_any_manual = all_names.find((x)=> {
+        grouping_filters_any_manual = all_names.find((x) => {
           const selected =
             variables.find((z) => z.value?.id === (this.props.query.grouping_filter_mapping || {})[x]?.id) || null;
-            return selected?.value?.id==='$__manual';
-        })!==undefined;
+          return selected?.value?.id === '$__manual';
+        }) !== undefined;
         grouping_filters = all_names.map((x) => {
-          
+
 
           const sel_mapping = (this.props.query.grouping_filter_mapping || {})[x];
           //console.log('GETTING FOR ',x, sel_mapping?.name);
           const selected =
             variables.find((z) => z.value?.id === sel_mapping?.id) || null;
-            
+
           const force_exclude = selected !== null && selected.value?.id === '$__agg';
           const force_include = selected === null;
           const included = (this.props.query.grouping_filter_includes || {})[x];
-          const is_manual = selected?.value?.id==='$__manual';
+          const is_manual = selected?.value?.id === '$__manual';
           //console.log('INCL:',x, (this.props.query.grouping_filter_includes||{})[x], included, selected);
           return (
             <tr key={x}>
@@ -555,7 +557,7 @@ if(this.this_is_query_editor){
                   onChange={(q) => this.onGroupingFilterIncludeChange(q.currentTarget.checked, x)}
                 ></Checkbox>
               </td>
-              <td style={{ width: grouping_filters_any_manual? '50%': '100%' }}>
+              <td style={{ width: grouping_filters_any_manual ? '50%' : '100%' }}>
                 <Select
                   isClearable={true}
                   options={variables}
@@ -566,22 +568,22 @@ if(this.this_is_query_editor){
                 />
               </td>
               {is_manual &&
-                <td style={{width: '50%'}}>
+                <td style={{ width: '50%' }}>
                   <AsyncMultiSelect
-                  isClearable={true}     
-                  
-                  allowCustomValue={false}
-                  defaultOptions={true}
-                  loadOptions={(s)=>this.getFilterOptions(x,this.props.query.filterId, this.props.datasource, this.props.range!)}
-                  onChange={(ops,a)=>{
-                    //console.log('CHANGE',ops,a);
-                    return this.onGroupingOptionsSelectedChange(ops, x);
-                  }}
-                  onBlur={() => {
-                    this.onRunQuery(this.props);
-                  }}
-                  value={sel_mapping.manual_values?.map(x=> selectableString(x))}
-                  />                  
+                    isClearable={true}
+
+                    allowCustomValue={false}
+                    defaultOptions={true}
+                    loadOptions={(s) => this.getFilterOptions(x, this.props.query.filterId, this.props.datasource, this.props.range!)}
+                    onChange={(ops, a) => {
+                      //console.log('CHANGE',ops,a);
+                      return this.onGroupingOptionsSelectedChange(ops, x);
+                    }}
+                    onBlur={() => {
+                      this.onRunQuery(this.props);
+                    }}
+                    value={sel_mapping.manual_values?.map(x => selectableString(x))}
+                  />
                 </td>
               }
             </tr>
@@ -592,14 +594,14 @@ if(this.this_is_query_editor){
           <table>
             <colgroup span={1}></colgroup>
             <colgroup span={1}></colgroup>
-            <colgroup span={grouping_filters_any_manual?2:1}></colgroup>
-            <thead>                              
+            <colgroup span={grouping_filters_any_manual ? 2 : 1}></colgroup>
+            <thead>
               <tr><th style={{ width: 'min-content' }}><InlineLabel>Grouping</InlineLabel></th><th style={{ width: 'min-content' }}><InlineLabel tooltip={"Whether to include this grouping as a returned series to be charted, or just apply the filter"}>Include</InlineLabel></th>
-              <th style={{ width: grouping_filters_any_manual? '50%': '100%' }}><InlineLabel>Filter</InlineLabel></th>
-              {
-              grouping_filters_any_manual && 
-              <th style={{ width:'50%', minWidth:'100px' }}><InlineLabel>Manual</InlineLabel></th>
-              }
+                <th style={{ width: grouping_filters_any_manual ? '50%' : '100%' }}><InlineLabel>Filter</InlineLabel></th>
+                {
+                  grouping_filters_any_manual &&
+                  <th style={{ width: '50%', minWidth: '100px' }}><InlineLabel>Manual</InlineLabel></th>
+                }
               </tr></thead>
             <tbody>{grouping_filters}</tbody>
           </table>
@@ -609,7 +611,7 @@ if(this.this_is_query_editor){
     }
 
     let filter_field = (
-      <InlineField label="Filter" labelWidth={this.this_is_query_editor?15:30} tooltip="Specify Filter to work with">
+      <InlineField label="Filter" labelWidth={this.this_is_query_editor ? 15 : 30} tooltip="Specify Filter to work with">
         { }
         <Select
           allowCustomValue={false}
@@ -635,7 +637,7 @@ if(this.this_is_query_editor){
               <InlineFieldRow>
                 {this.this_is_query_editor && filter_field}
                 {!this.this_is_query_editor && (
-                  <InlineField label="Grouping" labelWidth={this.this_is_query_editor?15:30}>
+                  <InlineField label="Grouping" labelWidth={this.this_is_query_editor ? 15 : 30}>
                     { }
                     <Select
                       allowCustomValue={false}
