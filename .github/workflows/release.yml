@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          cache: 'yarn'
-          cache-dependency-path: 'yarn.lock'
-          node-version: '>=16'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          node-version: '>=20'
 
       - name: Setup Go environment
         uses: actions/setup-go@v4
@@ -26,13 +26,13 @@ jobs:
           check-latest: true
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile;
+        run: npm install --frozen-lockfile;
         if: |
-          steps.cache-yarn-cache.outputs.cache-hit != 'true' ||
+          steps.cache-npm-cache.outputs.cache-hit != 'true' ||
           steps.cache-node-modules.outputs.cache-hit != 'true'
 
       - name: Build and test frontend
-        run: yarn build
+        run: npm run build
 
       - name: Check for backend
         id: check-for-backend
@@ -57,7 +57,7 @@ jobs:
           args: buildAll
 
       - name: Sign plugin
-        run: yarn sign
+        run: npm run sign
         env:
           GRAFANA_ACCESS_POLICY_TOKEN: ${{ secrets.GRAFANA_API_KEY }} # Requires a Grafana API key from Grafana.com.
 
