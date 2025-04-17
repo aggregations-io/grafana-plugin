@@ -25,8 +25,6 @@ import {
   stylesFactory,
   Checkbox,
   InlineLabel,
-  AsyncVirtualizedSelect,
-  AsyncSelect,
   AsyncMultiSelect,
 } from '@grafana/ui';
 import { getTemplateSrv } from '@grafana/runtime';
@@ -185,7 +183,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
     return result;
   }
 
-  async getFilterOptions(grouping_name: string, id: string | null, datasource: DataSource, range: { from: DateTime; to: DateTime; raw: any }): Promise<SelectableValue<string>[]> {
+  async getFilterOptions(grouping_name: string, id: string | null, datasource: DataSource, range: { from: DateTime; to: DateTime; raw: any }): Promise<Array<SelectableValue<string>>> {
     if (id === null) {
       return [];
     }
