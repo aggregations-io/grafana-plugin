@@ -29,7 +29,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     };
   }
 
-  applyTemplateVariables(query: MyQuery, scopedVars: ScopedVars): Record<string, any> {
+  applyTemplateVariables(query: MyQuery, scopedVars: ScopedVars): MyQuery {
     //console.log('scoped:',scopedVars)
     let s = getTemplateSrv();
     let curr = s.getVariables();
@@ -51,6 +51,15 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
           fi.filters =  [val.id];
           fi.returnGroupingValues=false;
           hasany = true;
+        } else if(val.manual_values){
+          hasany = true;
+          fi.filters=val.manual_values;
+          if(query.grouping_filter_includes!=null && query.grouping_filter_includes[k]!==undefined){
+            fi.returnGroupingValues=query.grouping_filter_includes[k];            
+          }else{
+            fi.returnGroupingValues=true;
+          }
+
         } else {
           if(query.grouping_filter_includes!=null && query.grouping_filter_includes[k]!==undefined){
             fi.returnGroupingValues=query.grouping_filter_includes[k];            
@@ -98,11 +107,12 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     return DEFAULT_QUERY;
   }
   async metricFindQuery(query: any, options?: any): Promise<MetricFindValue[]> {
-    const response = await this.postResource('groupingValues', query);
+    query.mode='variables';
+    const response = await this.query(query);
 
-    // Convert query results to a MetricFindValue[]
-    const values = response.data.map((frame: any) => ({ text: frame }));
+    const results: MetricFindValue[] =[];
+    response.forEach(x=> results.push(... x.data.map(f=> ({text:f})).flatMap(x=> x)))
 
-    return values;
+    return results;
   }
 }

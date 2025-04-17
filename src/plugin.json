@@ -30,7 +30,7 @@
     "maxDataPoints": false
   },
   "dependencies": {
-    "grafanaDependency": ">=9.5.3",
+    "grafanaDependency": ">=10.4.0",
     "plugins": []
   }
 }
