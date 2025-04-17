@@ -41,7 +41,7 @@ type handler struct {
 func NewDatasource(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 	opts, err := settings.HTTPClientOptions(ctx)
 	opts.Timeouts.Timeout = 10 * time.Second
-	opts.Headers["X-IS-GRAFANA"] = "1"
+	opts.Header.Add("X-IS_GRAFANA", "1")
 
 	if err != nil {
 		return nil, fmt.Errorf("http client options: %w", err)
