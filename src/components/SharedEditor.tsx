@@ -1,5 +1,5 @@
 import React, { ChangeEvent, PureComponent } from 'react';
-import { QueryEditorProps, QueryVariableModel, SelectableValue } from '@grafana/data';
+import { DataQueryRequest, DateTime, QueryEditorProps, QueryVariableModel, SelectableValue, isDataFrame } from '@grafana/data';
 import { DataSource } from '../datasource';
 import {
   Calculation,
@@ -11,6 +11,7 @@ import {
   MyQuery,
   stringToCalculation,
   calculationPretty,
+  
 } from '../types';
 import {
   InlineFieldRow,
@@ -24,10 +25,15 @@ import {
   stylesFactory,
   Checkbox,
   InlineLabel,
+  AsyncVirtualizedSelect,
+  AsyncSelect,
+  AsyncMultiSelect,    
 } from '@grafana/ui';
-import { getTemplateSrv } from '@grafana/runtime';
+import {  getTemplateSrv } from '@grafana/runtime';
 import { css } from '@emotion/css';
 import '../styles.css';
+
+
 
 function selectable(value?: FilterDefinition | null): SelectableValue<FilterDefinition> {
   if (!value) {
@@ -71,38 +77,45 @@ export class SharedEditor extends PureComponent<SharedProps> {
   constructor(props: SharedProps) {
     super(props);
 
-    //console.log('con',this.props.query);
-    if (this.props.query.includeGroupingLabels === undefined) {
-      this.props.query.includeGroupingLabels = true;
+    const cloned = structuredClone(props.query);
+
+    //console.log('con',this.props, cloned);
+    if (cloned.includeGroupingLabels === undefined) {
+      cloned.includeGroupingLabels = true;
     }
-    if (this.props.query.includeIncompleteIntervals === undefined) {
-      this.props.query.includeIncompleteIntervals = true;
+    if (cloned.includeIncompleteIntervals === undefined) {
+      cloned.includeIncompleteIntervals = true;
     }
-    if(this.props.query.shouldRecalculate === undefined){
-      this.props.query.shouldRecalculate = false;
+    if (cloned.shouldRecalculate === undefined) {
+      cloned.shouldRecalculate = false;
     }
-    if(this.props.query.longResult === undefined){
-      this.props.query.longResult = false;
+    if (cloned.longResult === undefined) {
+      cloned.longResult = false;
+    }
+    if (cloned.rand_id === undefined) {
+      cloned.rand_id = Math.random().toString(20).substring(2, 8);
     }
     this.this_is_query_editor = props.mode === 'query';
     this.onRunQuery = this.onRunQuery.bind(this);
     //console.log(this.props)
     this.known_filters = [];
-    if (this.props.query.rand_id === undefined) {
-      this.props.query.rand_id = Math.random().toString(20).substr(2, 8);
+    this.known_options={};
+    if (cloned.rand_id === undefined) {
+      cloned.rand_id = Math.random().toString(20).substring(2, 8);
     }
-    const { onChange, query } = this.props;
+    const { onChange } = this.props;
     onChange({
-      ...query,
+      ...cloned,
       datasourceId: props.datasource.id,
       excludeEmptyGroupings: false,
-      includeGroupingLabels: this.props.query.includeGroupingLabels === undefined || this.props.query.includeGroupingLabels === null ? true : this.props.query.includeGroupingLabels,
+      includeGroupingLabels: cloned.includeGroupingLabels === undefined || this.props.query.includeGroupingLabels === null ? true : cloned.includeGroupingLabels,
       mode: props.mode,
     });
   }
   styles = getStyles();
   this_is_query_editor: boolean;
   known_filters: Array<SelectableValue<FilterDefinition>>;
+  known_options: {[key:string]:Array<SelectableValue<string>>};
   got_filters = false;
   onRunQuery(
     props: Readonly<SharedProps> &
@@ -116,6 +129,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       props.query.filter_definition !== null &&
       props.query.filter_definition !== undefined
     ) {
+      
       props.query.filterDefinitionName = props.query.filter_definition!.name;
       if (props.query.selected_agg && props.query.selected_agg !== null) {
         props.query.filterDefinitionName = `${props.query.filterDefinitionName} - ${props.query.selected_agg.name}`;
@@ -169,6 +183,54 @@ export class SharedEditor extends PureComponent<SharedProps> {
       return this.known_filters;
     }
     return result;
+  }
+
+  async getFilterOptions(grouping_name:string, id:string|null,  datasource: DataSource, range: { from: DateTime; to: DateTime; raw: any }): Promise<SelectableValue<string>[]> {
+    if(id===null){
+      return [];
+    }    
+    if (!this.known_options[grouping_name||'-'||id]) {
+      const mqf:MyQuery = {
+        ... this.props.query,        
+        groupingName: grouping_name,
+        includeAggregateOption: false,              
+        mode: 'variables',
+        refId: 'variableCheck',
+      };
+
+      const request: DataQueryRequest<MyQuery> = {
+        targets: [mqf],
+        interval: '',
+        scopedVars: {},
+        range, // comes from props
+        requestId: 'dropdown-query',
+        timezone: 'browser',
+        app: 'panel',
+        startTime:range.from.toDate().valueOf(),
+        intervalMs: 30000,        
+      };
+
+      
+
+    
+  const results: Array<SelectableValue<string>> = [];
+
+   await datasource.query(request).forEach(n=>{    
+    for(const d of n.data){
+      if(isDataFrame(d)){        
+        for(let i=0; i<d.fields[0].values.length;i++){          
+          const val = d.fields[0].values.get(i);          
+          results.push({label: val, value: val })
+        }
+      }    
+    }
+  });
+
+this.known_options[grouping_name||'-'||id]=results;
+  return results;    
+    } else {
+      return this.known_options[grouping_name||'-'||id];
+    }    
   }
 
   onFilterDefinitionChange = (event: SelectableValue<FilterDefinition>) => {
@@ -304,43 +366,56 @@ export class SharedEditor extends PureComponent<SharedProps> {
 
   onGroupingFilterIncludeChange = (event: boolean, grp: string) => {
     const { onChange, query } = this.props;
+    const newIncludes = { ...(query.grouping_filter_includes || {}) };
     if (!query.grouping_filter_includes || query.grouping_filter_includes === null) {
       query.grouping_filter_includes = {};
     }
-    query.grouping_filter_includes[grp] = event;
-
-    onChange({ ...query, grouping_filter_includes: query.grouping_filter_includes });
+    newIncludes[grp] = event;
+    onChange({ ...query, grouping_filter_includes: newIncludes });
     this.onRunQuery(this.props);
 
   }
-  onGroupingFilterMapSelectChange = (event: SelectableValue<GroupingFilterMappingItem>, grp: string) => {
-    const { onChange, query } = this.props;
-    //console.log('qfmsc', query.grouping_filter_mapping, event, grp);
+  onGroupingOptionsSelectedChange = (event: Array<SelectableValue<string>>, grp: string )=>{
+    this.changeMap(true,grp,event);    
+  }
 
+  onGroupingFilterMapSelectChange = (event: SelectableValue<GroupingFilterMappingItem>, grp: string) => {
+    
+    this.changeMap(false,grp,event);
+     
+  };
+
+  changeMap = ( is_manual: boolean, grp:string, event: Array<SelectableValue<string>> | SelectableValue<GroupingFilterMappingItem>)=>{
+    const { onChange, query } = this.props;
+    const newMap = { ...(query.grouping_filter_mapping || {}) };
+    const newIncludes = { ...(query.grouping_filter_includes || {}) };
+    if(Array.isArray(event)){
+      newMap[grp] = {
+        id: '$__manual',
+        name:'$__manual',
+        manual_values: event.map(x=> x.value!)
+      };      
+    }else if(!event?.value){
+      delete newMap[grp];
+    }
+    else{
+      newMap[grp] = event.value;
+      if (event.value.id === '$__agg') {
+        newIncludes[grp] = false;
+      }     
+    }
     if (query.grouping_filter_mapping == null) {
       query.grouping_filter_mapping = {};
     }
-    if (!event || event == null || !event.value || event.value == null) {
-      delete query.grouping_filter_mapping[grp];
-    } else {
-      query.grouping_filter_mapping[grp] = event.value!;
-      if (event.value!.id === '$__agg') {
-        if (query.grouping_filter_includes === undefined || query.grouping_filter_includes === null) {
-          query.grouping_filter_includes = {};
-        }
-        query.grouping_filter_includes[grp] = false;
-      }
-    }
-
-    let str = '';
-    if (Object.keys(query.grouping_filter_mapping).length > 0) {
-      str = Object.entries(query.grouping_filter_mapping)
-        .map((x) => `${x[0]}="\$${x[1].name}"`)
-        .join('|');
-    }
-    onChange({ ...query, grouping_filter_mapping: query.grouping_filter_mapping, grouping_filter_mapping_str: str, grouping_filter_includes: query.grouping_filter_includes });
+    onChange({ ...query, grouping_filter_mapping: newMap, 
+      grouping_filter_mapping_str: Object.entries(newMap)
+      .filter(([k,v])=> v.id!=='$__manual')
+      .map(([k, v]) => `${k}="\$${v.name}"`)
+      .join('|'), 
+      grouping_filter_includes: newIncludes });
     this.onRunQuery(this.props);
-  };
+  }
+
   render() {
     const show_grouping_ops =
       this.this_is_query_editor &&
@@ -349,6 +424,7 @@ export class SharedEditor extends PureComponent<SharedProps> {
       this.props.query.filter_definition.groupings.length > 0;
     let grouping_ops;
     let grouping_filters;
+    let grouping_filters_any_manual:boolean;
     let grouping_filters_tbl;
 
 let incomplete_intervals=<InlineField label="Incomplete Intervals" labelWidth={22} tooltip={'Allow showing incomplete intervals.'}>
@@ -439,6 +515,11 @@ if(this.this_is_query_editor){
         label: 'IGNORED',
         description: 'do not include this grouping',
       });
+      variables.unshift({
+        value: {id: '$__manual', name: '$__manual'},
+        label: 'MANUAL',
+        description: 'input manual options to include in this filter'
+      });
       let all_names = [
         ...new Set([
           ...this.props.query.filter_definition!.groupings,
@@ -446,12 +527,23 @@ if(this.this_is_query_editor){
         ]),
       ];
       if (all_names.length > 0) {
-        grouping_filters = all_names.map((x) => {
+        grouping_filters_any_manual = all_names.find((x)=> {
           const selected =
             variables.find((z) => z.value?.id === (this.props.query.grouping_filter_mapping || {})[x]?.id) || null;
+            return selected?.value?.id==='$__manual';
+        })!==undefined;
+        grouping_filters = all_names.map((x) => {
+          
+
+          const sel_mapping = (this.props.query.grouping_filter_mapping || {})[x];
+          //console.log('GETTING FOR ',x, sel_mapping?.name);
+          const selected =
+            variables.find((z) => z.value?.id === sel_mapping?.id) || null;
+            
           const force_exclude = selected !== null && selected.value?.id === '$__agg';
           const force_include = selected === null;
           const included = (this.props.query.grouping_filter_includes || {})[x];
+          const is_manual = selected?.value?.id==='$__manual';
           //console.log('INCL:',x, (this.props.query.grouping_filter_includes||{})[x], included, selected);
           return (
             <tr key={x}>
@@ -463,7 +555,7 @@ if(this.this_is_query_editor){
                   onChange={(q) => this.onGroupingFilterIncludeChange(q.currentTarget.checked, x)}
                 ></Checkbox>
               </td>
-              <td style={{ width: '100%' }}>
+              <td style={{ width: grouping_filters_any_manual? '50%': '100%' }}>
                 <Select
                   isClearable={true}
                   options={variables}
@@ -473,14 +565,42 @@ if(this.this_is_query_editor){
 
                 />
               </td>
+              {is_manual &&
+                <td style={{width: '50%'}}>
+                  <AsyncMultiSelect
+                  isClearable={true}     
+                  
+                  allowCustomValue={false}
+                  defaultOptions={true}
+                  loadOptions={(s)=>this.getFilterOptions(x,this.props.query.filterId, this.props.datasource, this.props.range!)}
+                  onChange={(ops,a)=>{
+                    //console.log('CHANGE',ops,a);
+                    return this.onGroupingOptionsSelectedChange(ops, x);
+                  }}
+                  onBlur={() => {
+                    this.onRunQuery(this.props);
+                  }}
+                  value={sel_mapping.manual_values?.map(x=> selectableString(x))}
+                  />                  
+                </td>
+              }
             </tr>
           );
         });
         //grouping_filters.unshift(<div style={{ minWidth: '600px', height: 0 }}></div>, <h4>Grouping Filters</h4>);
-        grouping_filters_tbl = <><div style={{ display: 'flex', marginRight: 'auto', flexDirection: 'column' }}><div style={{ minWidth: '600px', height: 0 }}></div><h4>Grouping Filters</h4>
+        grouping_filters_tbl = <><div style={{ display: 'flex', marginRight: 'auto', flexDirection: 'column' }}><div style={{ minWidth: '660px', height: 0 }}></div><h4>Grouping Filters</h4>
           <table>
-            <thead><tr><th style={{ width: 'min-content' }}><InlineLabel>Grouping</InlineLabel></th><th style={{ width: 'min-content' }}><InlineLabel tooltip={"Whether to include this grouping as a returned series to be charted, or just apply the filter"}>Include</InlineLabel></th>
-              <th style={{ width: '100%' }}><InlineLabel>Filter</InlineLabel></th></tr></thead>
+            <colgroup span={1}></colgroup>
+            <colgroup span={1}></colgroup>
+            <colgroup span={grouping_filters_any_manual?2:1}></colgroup>
+            <thead>                              
+              <tr><th style={{ width: 'min-content' }}><InlineLabel>Grouping</InlineLabel></th><th style={{ width: 'min-content' }}><InlineLabel tooltip={"Whether to include this grouping as a returned series to be charted, or just apply the filter"}>Include</InlineLabel></th>
+              <th style={{ width: grouping_filters_any_manual? '50%': '100%' }}><InlineLabel>Filter</InlineLabel></th>
+              {
+              grouping_filters_any_manual && 
+              <th style={{ width:'50%', minWidth:'100px' }}><InlineLabel>Manual</InlineLabel></th>
+              }
+              </tr></thead>
             <tbody>{grouping_filters}</tbody>
           </table>
         </div>

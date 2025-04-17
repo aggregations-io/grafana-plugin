@@ -46,6 +46,7 @@ export interface GroupingFilterItem {
 export interface GroupingFilterMappingItem {
   id: string;
   name: string;
+  manual_values?: string[]|undefined;
 }
 
 export const DEFAULT_QUERY: Partial<MyQuery> = {
